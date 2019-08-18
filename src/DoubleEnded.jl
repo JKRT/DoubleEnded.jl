@@ -34,25 +34,22 @@ module DoubleEnded
 
 using MetaModelica
 using ExportAll
-
 import Mutable
-
-@UniontypeDecl MutableList
+using Mutable: MutableType
 
 const MapFunc = Function
 
-@Uniontype MutableList begin
-  @Record LIST begin
+@Uniontype MutableList{T} begin
+  @Record LIST{T} begin
     length::MutableType{ModelicaInteger}
     front::MutableType{List{T}}
     back::MutableType{List{T}}
   end
 end
 
-import GC
 import MetaModelica.Dangerous
 
-function new(first::T)  where {T}
+function new(first::T) where {T}
   local lst::List{T} = list(first)
   LIST(Mutable.create(1), Mutable.create(lst), Mutable.create(lst))
 end
@@ -91,9 +88,7 @@ end
 
 function length(delst::MutableList{T})  where {T}
   local length::ModelicaInteger
-
-  length = Mutable.access(delst.length)
-  length
+  Mutable.access(delst.length)
 end
 
 function pop_front(delst::MutableList{T})  where {T}
