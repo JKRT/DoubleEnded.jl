@@ -37,9 +37,11 @@ using ExportAll
 import Mutable
 using Mutable: MutableType
 
+@UniontypeDecl MutableList
+
 const MapFunc = Function
 
-@Uniontype MutableList{T} begin
+@Uniontype MutableList begin
   @Record LIST{T} begin
     length::MutableType{ModelicaInteger}
     front::MutableType{List{T}}
