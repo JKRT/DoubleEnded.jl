@@ -13,10 +13,10 @@ using ImmutableList
 using DataStructures: LinkedList
 include("linkedListAliases.jl")
 
-struct MutableList{T}
+mutable struct MutableList{T}
   length::Int
-  front::LinkedList
-  back::LinkedList
+  front::LinkedList{T}
+  back::LinkedList{T}
 end
 
 function new(first::T) where {T}
@@ -26,10 +26,24 @@ end
 
 function fromList(lst::List{T})  where {T}
   #= Rethink this =#
-  if lst isa lNil
-    MutabeList(0, llist(), llist())
+  if lst isa Nil
+    return MutableList(0, llist(), llist())
   end
-
+  #= Otherwise we loop =#
+  local linkedLst::LinkedList = lnil()
+  local cntr::Int = 0
+  for i in lst
+    linkedLst = lcons(i, linkedLst)
+    cntr += 1
+  end
+  local linkedLst = reverse(linkedLst)
+  local newFront = linkedLst
+  local cntr2::Int = 0
+  local backList::LinkedList = linkedLst
+  for i in 1:cntr - 1
+    backList = backList.tail
+  end
+  MutableList(cntr, newFront, backList)
 end
 
 function empty(dummy::T)  where {T}
@@ -42,12 +56,13 @@ end
 
 function pop_front(delst::MutableList{T})  where {T}
   if length==1 then
-    delst.front =  llist()
+    delst.front = llist()
     delst.back = llist()
     delst.length = 0
   end
   popped_elem = delst.front.head
   delst.front = delst.front.tail
+  delst.length -= 1
   popped_elem
 end
 
@@ -73,14 +88,16 @@ function push_list_back(delst::MutableList{T}, lst::List{T})  where {T}
 end
 
 function toListAndClear(delst::MutableList{T}, prependToList::List{T} = nil)  where {T}
-  for i in delst:-1:1
-    prependToList = i <| prependToList
+  local linkedLst::LinkedList = lnil()
+  local pl = prependToList
+  for i in reverse(delst.front)
+    pl = i <| pl
   end
   #Clear delst
   delst.length = 0
   delst.front = llist()
   delst.back = llist()
-  prependToList
+  pl
 end
 
 #= Returns the working list, which may be changed later on! =#
