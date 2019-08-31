@@ -75,6 +75,7 @@ end
 
 function push_list_front(delst::MutableList{T}, lst::List{T})  where {T}
   local mutableList::LinkedList = list(lst...)
+
 end
 
 function push_back(delst::MutableList{T}, elt::T)  where {T}
@@ -124,7 +125,6 @@ function mapFoldNoCopy(delst::MutableList{T}, inMapFunc::Function, arg::ArgT1)  
   fail()
 end
 
-#= So that we can use wildcard imports and named imports when they do occur. Not good Julia practice =#
-@exportAll()
+@exportAll
 
 end #= DoubleEnded =#
