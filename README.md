@@ -26,12 +26,12 @@ along with various utility methods to get the head and the tail in constant time
 """
   Creates a new Mutable list with one element, first of type T.
 """
-new(first::T)
+new
 
 """
   Converts an Immutable list, lst into an MutableList.
 """
-fromList(lst::List{T})
+fromList
 
 """
   Creates a new empty MutableList
