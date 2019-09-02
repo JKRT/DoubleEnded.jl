@@ -1,6 +1,6 @@
 name = "DoubleEnded"
 uuid = "1bc4e7c2-c1e1-11e9-03fe-315bbef43fde"
-authors = ["johti <johti17@liu.se>"]
+authors = ["John Tinnerholm johti <johti17@liu.se>"]
 version = "0.1.0"
 
 [deps]

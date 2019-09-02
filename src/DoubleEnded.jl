@@ -1,6 +1,30 @@
+#=
+This file is part of OpenModelica.
+Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
+c/o Linköpings universitet, Department of Computer and Information Science,
+SE-58183 Linköping, Sweden.
+All rights reserved.
+THIS PROGRAM IS PROVIDED UNDER THE TERMS OF THE BSD NEW LICENSE OR THE
+GPL VERSION 3 LICENSE OR THE OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
+ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
+RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
+ACCORDING TO RECIPIENTS CHOICE.
+The OpenModelica software and the OSMC (Open Source Modelica Consortium)
+Public License (OSMC-PL) are obtained from OSMC, either from the above
+address, from the URLs: http://www.openmodelica.org or
+http://www.ida.liu.se/projects/OpenModelica, and in the OpenModelica
+distribution. GNU version 3 is obtained from:
+http://www.gnu.org/copyleft/gpl.html. The New BSD License is obtained from:
+http://www.opensource.org/licenses/BSD-3-Clause.
+This program is distributed WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE, EXCEPT AS
+EXPRESSLY SET FORTH IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE
+CONDITIONS OF OSMC-PL.
+=#
+
 """
-Author: John Tinnerholm
-  This package provides a DoubleEnded list with various utility methods
+  Author: John Tinnerholm
+  This package provides a DoubleEnded list with various utility methods.
 """
 module DoubleEnded
 
@@ -11,19 +35,28 @@ using ImmutableList
 using DataStructures: LinkedList
 include("linkedListAliases.jl")
 
+"""
+  Defintion of the Double ended mutable list
+"""
 mutable struct MutableList{T}
   length::Int
   front::LinkedList{T}
   back::LinkedList{T}
 end
 
+"""
+  Creates a new Mutable list with one element, first of type T.
+"""
 function new(first::T) where {T}
   lst = DataStructures.list(first)
   MutableList(1, lst, lst)
 end
 
+"""
+  Converts an Immutable list, lst into an MutableList.
+"""
 function fromList(lst::List{T})  where {T}
-  #= Rethink this =#
+  #= Rethink this, maybe =#
   if lst isa Nil
     return MutableList(0, llist(), llist())
   end
@@ -44,14 +77,30 @@ function fromList(lst::List{T})  where {T}
   MutableList(cntr, newFront, backList)
 end
 
+"""
+  Creates a new empty MutableList
+"""
 function empty(dummy::T)  where {T}
   MutableList(0, llist(), llist())
 end
 
-function length(delst::MutableList{T})  where {T}
+"""
+  Creates a new empty MutableList
+"""
+function empty()
+  MutableList(0, llist(), llist())
+end
+
+"""
+  Returns the length of the MutableList, delst
+"""
+function Base.length(delst::MutableList)
   delst.length
 end
 
+"""
+  Pops and returns the first element of the MutableList, delst.
+"""
 function pop_front(delst::MutableList{T})  where {T}
   if length==1 then
     delst.front = llist()
@@ -64,42 +113,71 @@ function pop_front(delst::MutableList{T})  where {T}
   popped_elem
 end
 
-function currentBackCell(delst::MutableList{T})  where {T}
+"""
+  Returns the current back cell of the MutableList, delst.
+"""
+function currentBackCell(delst::MutableList)
   delst.back
 end
 
-function push_front(delst::MutableList{T}, elt::T)  where {T}
-  local currentHead = delst.front.head
-  delst.front.tail = cons(elt, cons(currentHead, delst.front.tail))
+"""
+  Prepends an element elt at the front of the MutableList delst.
+"""
+function push_front(delst::MutableList, elt::T)  where {T}
+  if ! (delst.front isa DataStructures.Nil)
+    local currentHead = delst.front.head
+    delst.front = lcons(elt, lcons(currentHead, delst.front.tail))
+    delst.length += 1
+  else
+    throw("Cannot push a list at the front of an empty list.")
+  end
+  return delst
 end
 
-function push_list_front(delst::MutableList{T}, lst::List{T})  where {T}
-  local mutableList::LinkedList = list(lst...)
-
+"""
+  Prepends the immutable list lst at the front of the MutableList, delst.
+"""
+function push_list_front(delst::MutableList, lst::List{T})  where {T}
+  for e in listReverse(lst)
+    push_front(delst, e)
+  end
 end
 
-function push_back(delst::MutableList{T}, elt::T)  where {T}
-  delst.back = cons(elt, nil())
+"""
+  Pushes an element elt at the back of the mutable list delst.
+"""
+function push_back(delst::MutableList, elt::T)  where {T}
+  local newTail = lcons(elt ,llist())
+  delst.back.tail = lcons(delst.back.head, newTail)
+  delst.back = newTail
+  delst.length += 1
 end
 
-function push_list_back(delst::MutableList{T}, lst::List{T})  where {T}
-  #=TODO=#
+"""
+  Appends the ImmutableList lst at the back of the MutableList delst.
+"""
+function push_list_back(delst::MutableList, lst::List{T})  where {T}
+  for e in lst
+    push_back(delst, e)
+  end
 end
 
-function toListAndClear(delst::MutableList{T}, prependToList::List{T} = nil)  where {T}
+"""
+  Returns an immutable List and clears the MutableList
+"""
+function toListAndClear(delst::MutableList, prependToList::List{T} = nil)  where {T}
   local linkedLst::LinkedList = lnil()
   local pl = prependToList
   for i in reverse(delst.front)
     pl = i <| pl
   end
-  #Clear delst
-  delst.length = 0
-  delst.front = llist()
-  delst.back = llist()
+  clear(delst)
   pl
 end
 
-#= Returns the working list, which may be changed later on! =#
+"""
+  Returns an Immutable list without changing the MutableList.
+"""
 function toListNoCopyNoClear(delst::MutableList{T})  where {T}
   local res::List{T} = nil
   for i in lst:-1:1
@@ -107,22 +185,46 @@ function toListNoCopyNoClear(delst::MutableList{T})  where {T}
   end
 end
 
+"""
+  Resets the MutableList.
+"""
 function clear(delst::MutableList{T})  where {T}
   delst.back = lnil()
   delst.front = lnil()
   delst.length = 0
 end
 
-function mapNoCopy_1(delst::MutableList{T}, inMapFunc::Function, inArg1::ArgT1)  where {T, ArgT1}
-  local lst = delst.front
-  for i in lst
-    inMapFunc(i, inArg1)
+"""
+  This function takes a higher order function(inMapFunc) and one argument(ArgT1).
+  It applies these function to each element in the list mutating it and by doing so updating
+  the list.
+"""
+function mapNoCopy_1(delst::MutableList, inMapFunc::Function, inArg1::ArgT1)  where {ArgT1}
+  local tmp::LinkedList = delst.front
+  while !(tmp isa DataStructures.Nil)
+    local headValue = tmp.head
+    tmp.head = inMapFunc(headValue, inArg1)
+    tmp = tmp.tail
   end
 end
 
+"""
+  This functions folds a MutableList. Delst using inMapFunc together with the extra argument arg.
+"""
 function mapFoldNoCopy(delst::MutableList{T}, inMapFunc::Function, arg::ArgT1)  where {T, ArgT1}
-  println("mapFoldNoCopy not yet implemented")
-  fail()
+  local tmp::LinkedList = delst.front
+  #= Our fold storage =#
+  local argo = arg
+  while !(tmp isa DataStructures.Nil)
+    local headValue = tmp.head
+    local res
+    (res, argo) = inMapFunc(headValue, argo)
+    #= Mutate the list element =#
+    tmp.head = res
+    tmp = tmp.tail
+  end
+  #= We return void =#
+  argo
 end
 
 @exportAll

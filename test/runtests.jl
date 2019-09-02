@@ -19,6 +19,17 @@ include("../src/linkedListAliases.jl")
   @test dLst2.front.head == 1
   @test dLst2.back.head == 3
   @test dLst2.length == 3
+  @testset "Testing push back and front of lists" begin
+    local b::DoubleEnded.MutableList = DoubleEnded.fromList(list(1))
+    DoubleEnded.push_list_front(b, list(1,2,3))
+    @test llist(1, 2, 3, 1) == b.front
+    DoubleEnded.push_list_back(b, list(6, 7, 8, 9))
+    @test b.back.head == 9
+    @test length(b) == 8
+    @test b.front.head == 1
+    local tmpMLst = DoubleEnded.empty()
+    @test tmpMLst isa DoubleEnded.MutableList
+  end
 end
 
 @testset "Operations tests" begin
@@ -27,6 +38,19 @@ end
   @test dLst2.length == 2
   @test llist(2,3) == dLst2.front
   @test llist(3) == dLst2.back
+  @testset "Test mapping operations" begin
+    local refLst::DoubleEnded.MutableList = DoubleEnded.fromList(list(1,2,3,4))
+    local lambda = (X, Y) -> X * Y
+    #= Try  to mutate the refLst =#
+    DoubleEnded.mapNoCopy_1(refLst, lambda, 2)
+    @test refLst.front == llist(2, 4, 6, 8)
+    @test length(refLst.front) == 4
+    local refLst2::DoubleEnded.MutableList = DoubleEnded.fromList(list(1,2,3,4))
+    local lambda2 = (X, Y) -> (X * Y, X * Y)
+    local foldRes = DoubleEnded.mapFoldNoCopy(refLst2, lambda2, 1)
+    @test refLst2.front == llist(1, 2, 6, 24)
+    @test foldRes == 24
+  end
 end
 
 @testset "teardown tests" begin
