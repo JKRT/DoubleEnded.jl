@@ -1,101 +1,101 @@
 # DoubleEnded
 
-**A Double ended mutable list for Julia**
+`DoubleEnded` provides `MutableList`, a mutable double-ended list.
+It stores its elements in the immutable singly linked list of
+[ImmutableList.jl](https://github.com/OpenModelica/ImmutableList.jl) and keeps
+pointers to the first and the last cell. Pushing and popping at the front
+and pushing at the back take O(1). The length is stored, so `length` is O(1).
 
-This package provides a DoubleEnded mutable list.
-It is provided to be used in conjunction with the singly linked immutable list,
-provided in ImmutableList.jl.
+## Installation
 
-This package contains the defintion
-along with various utility methods to get the head and the tail in constant time.
+The package is in the OpenModelica registry
+(<https://github.com/OpenModelica/OpenModelicaRegistry>). The General registry
+must also be present: ExportAll.jl and ImmutableList.jl are resolved from it.
 
-## MutableList
-
-`MutableList` is a single linked and double ended list.
-* Usage:
 ```julia
-  lst1::List = nil
-  dLst1::DoubleEnded.MutableList = DoubleEnded.fromList(lst1) #Creates an empty double ended list
-  dLst2::DoubleEnded.MutableList = DoubleEnded.empty #Same as above
-  #Creates a double ended list from the immutable list (1,2,3)
-  dLst2::DoubleEnded.MutableList = DoubleEnded.fromList(ImmutableList.list(1,2,3))
+using Pkg
+Pkg.Registry.add(Pkg.RegistrySpec(url="https://github.com/OpenModelica/OpenModelicaRegistry"))
+Pkg.add("DoubleEnded")
 ```
-* Utility functions:
+
+The development version:
+
 ```julia
-
-"""
-  Creates a new Mutable list with one element, first of type T.
-"""
-new
-
-"""
-  Converts an Immutable list, lst into an MutableList.
-"""
-fromList
-
-"""
-  Creates a new empty MutableList
-"""
-empty
-
-"""
-  Returns the length of the MutableList, delst
-"""
-length
-
-"""
-  Pops and returns the first element of the MutableList, delst.
-"""
-pop_front
-"""
-  Returns the current back cell of the MutableList, delst.
-"""
-currentBackCell
-
-"""
-  Prepends an element elt at the front of the MutableList delst.
-"""
-push_front
-
-"""
-  Prepends the immutable list lst at the front of the MutableList, delst.
-"""
-push_list_front
-
-"""
-  Pushes an element elt at the back of the mutable list delst.
-"""
-push_back
-
-"""
-  Appends the ImmutableList lst at the back of the MutableList delst.
-"""
-push_list_back
-
-"""
-  Returns an immutable List and clears the MutableList
-"""
-toListAndClear
-
-"""
-  Returns an Immutable list without changing the MutableList.
-"""
-toListNoCopyNoClear
-
-"""
-  Resets the MutableList.
-"""
-clear
-
-"""
-  This function takes a higher order function(inMapFunc) and one argument(ArgT1).
-  It applies these function to each element in the list mutating it and by doing so updating
-  the list.
-"""
-mapNoCopy_1
-
-"""
-  This functions folds a MutableList, delst using inMapFunc together with the extra argument arg.
-"""
-mapFoldNoCopy
+using Pkg
+Pkg.add(url="https://github.com/OpenModelica/DoubleEnded.jl")
 ```
+
+Requirements: Julia 1.13. Dependencies: ExportAll.jl, ImmutableList.jl.
+
+## Usage
+
+```julia
+using DoubleEnded
+using ImmutableList
+
+delst = DoubleEnded.fromList(list(1, 2, 3))   # MutableList{Int64}
+DoubleEnded.push_front(delst, 0)
+DoubleEnded.push_back(delst, 4)
+println(length(delst))                        # 5
+println(DoubleEnded.pop_front(delst))         # 0
+println(collect(delst))                       # [1, 2, 3, 4]
+lst = DoubleEnded.toListAndClear(delst)       # the ImmutableList 1, 2, 3, 4; delst is empty
+```
+
+## Functions
+
+The argument names below are the ones in `src/DoubleEnded.jl`. Each function
+has a docstring: `?DoubleEnded.push_back` in the REPL.
+
+`MutableList` and all functions are exported (`@exportAll`), except `empty`:
+call it as `DoubleEnded.empty`. `length` and iteration extend Base.
+
+Constructors:
+
+- `new(first)`: a list with the one element `first`. The element type is `typeof(first)`.
+- `fromList(lst)`: a list with the elements of the ImmutableList `lst`, in order, O(n). The list does not share cells with `lst`. `fromList(nil)` returns a `MutableList{Any}`.
+- `empty(dummy)`: an empty list of element type `typeof(dummy)`.
+- `empty()`: an empty `MutableList{Any}`.
+
+Queries:
+
+- `length(delst)`: the number of elements, O(1).
+- `currentBackCell(delst)`: the last cell, or `nil` if `delst` is empty.
+- `toListNoCopyNoClear(delst)`: the first cell as an ImmutableList, without copying or clearing `delst`. If `delst` is non-empty, in-place changes (`push_back`, `mapNoCopy_1`, `mapFoldNoCopy`) show through the returned list. `push_front`, `pop_front` and `clear` do not. If `delst` is empty, the result is `nil` and stays `nil`.
+- `for x in delst` and `collect(delst)`: iterate front to back.
+
+Adding elements (`elt` is converted to the element type with `convert`):
+
+- `push_front(delst, elt)`: prepends `elt`, O(1). Returns `delst`.
+- `push_back(delst, elt)`: appends `elt`, O(1). Returns `delst`.
+- `push_list_front(delst, lst)`: prepends the elements of the ImmutableList `lst`, O(n). Returns `delst`.
+- `push_list_back(delst, lst)`: appends the elements of the ImmutableList `lst`, O(n). Returns `delst`.
+
+Removing elements:
+
+- `pop_front(delst)`: removes and returns the first element. Throws `ArgumentError` if `delst` is empty.
+- `clear(delst)`: removes all elements. Returns `delst`.
+- `toListAndClear(delst; prependToList = nil)`: returns the elements as an ImmutableList, followed by `prependToList`, and clears `delst`. The splice is O(1).
+
+In-place maps:
+
+- `mapNoCopy_1(delst, inMapFunc, inArg1)`: replaces each element `e` by `inMapFunc(e, inArg1)`. Returns `delst`.
+- `mapFoldNoCopy(delst, inMapFunc, arg)`: starts with `acc = arg`. For each element `e`, `(newElt, newAcc) = inMapFunc(e, acc)` replaces `e` by `newElt` and sets `acc = newAcc`. Returns the final `acc`.
+
+`_iter` is an internal helper of the iteration. It is exported by `@exportAll`
+but is not part of the API.
+
+## Tests
+
+```
+julia --project=. -e 'using Pkg; Pkg.test()'
+```
+
+The test environment needs the `Test` standard library only. CI runs this on
+Julia 1.13 (`.github/workflows/CI.yml`).
+
+## License
+
+The code is licensed under the GNU Affero General Public License v3 or the
+OSMC Public License v1.8, at the recipient's choice (source file header). The
+full texts are in `LICENSE.md`.
