@@ -57,6 +57,12 @@ using ExportAll
 using ImmutableList
 using ImmutableList.Unsafe: listSetFirst, listSetRest
 
+"""
+    MutableList{T}
+
+A mutable list with elements of type `T`. Fields: `length`, `front` (first
+cell), `back` (last cell). `front` and `back` are `Nil` when the list is empty.
+"""
 mutable struct MutableList{T}
   length::Int
   front::Union{Nil, Cons{T}}
@@ -66,7 +72,9 @@ end
 MutableList{T}() where {T} = MutableList{T}(0, nil, nil)
 
 """
-  Creates a new MutableList with one element of type T.
+    new(first)
+
+Creates a `MutableList{typeof(first)}` with the one element `first`.
 """
 function new(first::T) where {T}
   local cell = Cons{T}(first, nil)
@@ -74,9 +82,11 @@ function new(first::T) where {T}
 end
 
 """
-  Converts an ImmutableList into a MutableList. The returned MutableList
-  shares cells with the input list; mutating the MutableList may therefore
-  mutate the source list. (Same convention as the MetaModelica original.)
+    fromList(lst)
+
+Converts the ImmutableList `lst` into a `MutableList`, in O(n). The result
+holds new cells: it does not share cells with `lst`. `fromList(nil)` returns
+a `MutableList{Any}`.
 """
 function fromList(::Nil)
   MutableList{Any}()
@@ -91,8 +101,12 @@ function fromList(lst::Cons{T}) where {T}
 end
 
 """
-  Creates a new empty MutableList. The dummy element fixes the element
-  type T at the call site.
+    empty(dummy)
+    empty()
+
+Creates an empty `MutableList`. `empty(dummy)` has element type
+`typeof(dummy)`; `empty()` has element type `Any`. Not exported: call it as
+`DoubleEnded.empty`.
 """
 function empty(dummy::T) where {T}
   MutableList{T}()
@@ -101,12 +115,17 @@ end
 empty() = MutableList{Any}()
 
 """
-  Returns the length of the MutableList.
+    length(delst)
+
+Returns the number of elements of `delst`, in O(1).
 """
 Base.length(delst::MutableList) = delst.length
 
 """
-  Pops and returns the first element of the MutableList.
+    pop_front(delst)
+
+Removes and returns the first element of `delst`. Throws `ArgumentError` if
+`delst` is empty.
 """
 function pop_front(delst::MutableList{T}) where {T}
   delst.front isa Nil && throw(ArgumentError("pop_front on empty MutableList"))
@@ -121,12 +140,17 @@ function pop_front(delst::MutableList{T}) where {T}
 end
 
 """
-  Returns the current back cell of the MutableList, or `nil` if empty.
+    currentBackCell(delst)
+
+Returns the last cell of `delst`, or `nil` if `delst` is empty.
 """
 currentBackCell(delst::MutableList) = delst.back
 
 """
-  Prepends an element at the front of the MutableList.
+    push_front(delst, elt)
+
+Prepends `elt` (converted to the element type) to `delst`, in O(1). Returns
+`delst`.
 """
 function push_front(delst::MutableList{T}, elt) where {T}
   local cell = Cons{T}(convert(T, elt), delst.front)
@@ -139,7 +163,10 @@ function push_front(delst::MutableList{T}, elt) where {T}
 end
 
 """
-  Prepends the immutable list lst at the front of the MutableList.
+    push_list_front(delst, lst)
+
+Prepends the elements of the ImmutableList `lst` to `delst`, in order, in
+O(n). Returns `delst`.
 """
 function push_list_front(delst::MutableList, lst::List)
   for e in listReverse(lst)
@@ -149,8 +176,10 @@ function push_list_front(delst::MutableList, lst::List)
 end
 
 """
-  Pushes an element at the back of the MutableList in O(1).
-  Mutates the previous back cell's tail to point to the new cell.
+    push_back(delst, elt)
+
+Appends `elt` (converted to the element type) to `delst`, in O(1). Sets the
+tail of the previous back cell to the new cell. Returns `delst`.
 """
 function push_back(delst::MutableList{T}, elt) where {T}
   local newCell = Cons{T}(convert(T, elt), nil)
@@ -165,7 +194,10 @@ function push_back(delst::MutableList{T}, elt) where {T}
 end
 
 """
-  Appends the ImmutableList lst at the back of the MutableList.
+    push_list_back(delst, lst)
+
+Appends the elements of the ImmutableList `lst` to `delst`, in order, in
+O(n). Returns `delst`.
 """
 function push_list_back(delst::MutableList, lst::List)
   for e in lst
@@ -175,10 +207,11 @@ function push_list_back(delst::MutableList, lst::List)
 end
 
 """
-  Returns the contents as an ImmutableList and clears the MutableList.
-  When `prependToList` is non-empty the result is the MutableList contents
-  followed by `prependToList`; this splice is O(1) via `listSetRest` on the
-  back cell.
+    toListAndClear(delst; prependToList = nil)
+
+Returns the elements of `delst` as an ImmutableList, followed by
+`prependToList`, and clears `delst`. The splice is O(1): the tail of the back
+cell is set to `prependToList`.
 """
 function toListAndClear(delst::MutableList{T};
                         prependToList::Union{Nil, Cons{T}} = nil) where {T}
@@ -195,16 +228,22 @@ function toListAndClear(delst::MutableList{T};
 end
 
 """
-  Returns an ImmutableList view of the contents without copying or
-  clearing the MutableList. Subsequent mutations of the MutableList are
-  visible through the returned list.
+    toListNoCopyNoClear(delst)
+
+Returns the first cell of `delst` as an ImmutableList, without copying or
+clearing `delst`. If `delst` is non-empty, in-place changes of the cells
+(`push_back`, `mapNoCopy_1`, `mapFoldNoCopy`) show through the returned list.
+`push_front`, `pop_front` and `clear` do not. If `delst` is empty, the result
+is `nil` and stays `nil`.
 """
 function toListNoCopyNoClear(delst::MutableList)
   delst.front
 end
 
 """
-  Resets the MutableList to empty.
+    clear(delst)
+
+Removes all elements of `delst`. Returns `delst`.
 """
 function clear(delst::MutableList)
   delst.front = nil
@@ -214,7 +253,10 @@ function clear(delst::MutableList)
 end
 
 """
-  Applies inMapFunc(elt, inArg1) to each element in delst, mutating in place.
+    mapNoCopy_1(delst, inMapFunc, inArg1)
+
+Replaces each element `e` of `delst` by `inMapFunc(e, inArg1)`, in place.
+Returns `delst`.
 """
 function mapNoCopy_1(delst::MutableList{T}, inMapFunc::Function, inArg1) where {T}
   local cur = delst.front
@@ -227,8 +269,11 @@ function mapNoCopy_1(delst::MutableList{T}, inMapFunc::Function, inArg1) where {
 end
 
 """
-  Folds delst in place with inMapFunc(elt, acc) -> (newElt, newAcc).
-  Returns the final accumulator.
+    mapFoldNoCopy(delst, inMapFunc, arg)
+
+Folds `delst` in place. Starts with the accumulator `arg`. For each element
+`e`, `(newElt, newAcc) = inMapFunc(e, acc)` replaces `e` by `newElt` and sets
+the accumulator to `newAcc`. Returns the final accumulator.
 """
 function mapFoldNoCopy(delst::MutableList{T}, inMapFunc::Function, arg) where {T}
   local cur = delst.front
@@ -244,7 +289,10 @@ function mapFoldNoCopy(delst::MutableList{T}, inMapFunc::Function, arg) where {T
 end
 
 """
-  Iterate over the elements of a MutableList in order.
+    iterate(delst)
+
+Iterates over the elements of `delst`, front to back. Used by `for x in delst`
+and `collect(delst)`.
 """
 Base.iterate(delst::MutableList) = _iter(delst.front)
 Base.iterate(::MutableList, state) = _iter(state)
