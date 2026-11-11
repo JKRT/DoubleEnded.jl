@@ -75,8 +75,8 @@ end
 
 """
   Converts an ImmutableList into a MutableList. The returned MutableList
-  shares cells with the input list; mutating the MutableList may therefore
-  mutate the source list. (Same convention as the MetaModelica original.)
+  holds new cells: it does not share cells with the input list, so mutating
+  the MutableList leaves the input list unchanged. Runs in O(n).
 """
 function fromList(::Nil)
   MutableList{Any}()
@@ -196,8 +196,10 @@ end
 
 """
   Returns an ImmutableList view of the contents without copying or
-  clearing the MutableList. Subsequent mutations of the MutableList are
-  visible through the returned list.
+  clearing the MutableList. If the MutableList is non-empty, in-place changes
+  to the cells (push_back, mapNoCopy_1, mapFoldNoCopy) are visible through the
+  returned list. push_front, pop_front and clear do not change it. If the
+  MutableList is empty, the returned list is nil and stays nil.
 """
 function toListNoCopyNoClear(delst::MutableList)
   delst.front
